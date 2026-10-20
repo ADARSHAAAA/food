@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoodShare AI - Smart Dashboard</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-card .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .stat-card .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--dark);
+        }
+        
+        .stat-card .stat-label {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+        
+        .ai-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .urgency-critical { background: #fee2e2; color: #dc2626; }
+        .urgency-high { background: #fef3c7; color: #d97706; }
+        .urgency-medium { background: #dbeafe; color: #2563eb; }
+        .urgency-normal { background: #d1fae5; color: #059669; }
+        
+        .ai-insight {
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            border-left: 4px solid #0ea5e9;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .route-map {
+            background: #f8fafc;
+            border-radius: 12px;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .route-map::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="%23e2e8f0" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>') repeat;
+            opacity: 0.5;
+        }
+        
+        .route-stop {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.8rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 2;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+        }
+        
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+        
+        .offline .live-dot {
+            background: #ef4444;
+            animation: none;
+        }
+        
+        .prediction-bar {
+            height: 8px;
+            border-radius: 4px;
+            background: #e2e8f0;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+        
+        .prediction-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fas fa-utensils"></i>
+            <span>FoodShare <span class="ai-badge"><i class="fas fa-brain"></i> AI</span></span>
+        </div>
+        <div class="nav-links">
+            <a href="#" class="active">Dashboard</a>
+            <a href="donor.html">Donate</a>
+            <a href="volunteer.html">Volunteer</a>
+            <div class="live-indicator" id="connection-status">
+                <span class="live-dot"></span>
+                <span>Connecting...</span>
+            </div>
+            <button class="btn btn-outline" onclick="logout()">Logout</button>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <!-- Header -->
+        <div class="page-header">
+            <div>
+                <h1>🤖 AI-Powered Dashboard</h1>
+                <p>Real-time food redistribution intelligence</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="refreshDashboard()">
+                    <i class="fas fa-sync"></i> Refresh
+                </button>
+            </div>
+        </div>
+
+        <!-- Real-time Stats -->
+        <div class="dashboard-grid">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #dbeafe; color: #2563eb;">
+                    <i class="fas fa-utensils"></i>
+                </div>
+                <div class="stat-value" id="stat-active">0</div>
+                <div class="stat-label">Active Donations</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #d1fae5; color: #059669;">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-value" id="stat-volunteers">0</div>
+                <div class="stat-label">Active Volunteers</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #fef3c7; color: #d97706;">
+                    <i class="fas fa-truck"></i>
+                </div>
+                <div class="stat-value" id="stat-pending">0</div>
+                <div class="stat-label">Pending Pickups</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #fce7f3; color: #db2777;">
+                    <i class="fas fa-heart"></i>
+                </div>
+                <div class="stat-value" id="stat-meals">0</div>
+                <div class="stat-label">Meals Today</div>
+            </div>
+        </div>
+
+        <!-- AI Insights Section -->
+        <div class="section">
+            <h2><i class="fas fa-brain"></i> AI Insights</h2>
+            <div id="ai-insights" class="ai-insights-container">
+                <!-- Dynamic AI insights will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="content-grid">
+            <!-- Urgent Donations -->
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Urgent Pickups</h3>
+                    <span class="badge badge-warning">AI Priority</span>
+                </div>
+                <div class="card-body" id="urgent-donations">
+                    <!-- Dynamic content -->
+                </div>
+            </div>
+
+            <!-- Route Optimization -->
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-route"></i> Optimized Routes</h3>
+                    <span class="ai-badge">VRP Algorithm</span>
+                </div>
+                <div class="card-body">
+                    <div class="route-map" id="route-map">
+                        <p>Click "Generate Route" to optimize pickup route</p>
+                    </div>
+                    <div id="route-summary" style="margin-top: 1rem;">
+                    </div>
+                    <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;" onclick="generateOptimizedRoute()">
+                        <i class="fas fa-magic"></i> Generate AI Route
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Impact Analytics -->
+        <div class="section">
+            <h2><i class="fas fa-chart-line"></i> Impact Analytics</h2>
+            <div class="dashboard-grid" style="grid-template-columns: repeat(5, 1fr);">
+                <div class="stat-card">
+                    <div class="stat-value" id="impact-total">0</div>
+                    <div class="stat-label">Total Donations</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="impact-meals">0</div>
+                    <div class="stat-label">Total Meals</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="impact-volunteers">0</div>
+                    <div class="stat-label">Volunteers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="impact-efficiency">0%</div>
+                    <div class="stat-label">AI Efficiency</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="impact-co2">0kg</div>
+                    <div class="stat-label">CO₂ Saved</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Organizations Status -->
+        <div class="section">
+            <h2><i class="fas fa-building"></i> Partner Organizations</h2>
+            <div class="card">
+                <div class="card-body" id="organizations-list">
+                    <!-- Dynamic content -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="../js/app.js"></script>
+    <script>
+        // Dashboard functions
+        async function refreshDashboard() {
+            showLoading();
+            try {
+                await Promise.all([
+                    loadRealtimeStats(),
+                    loadUrgentDonations(),
+                    loadImpactAnalytics(),
+                    loadOrganizations(),
+                    loadAIInsights()
+                ]);
+            } catch (error) {
+                console.error('Dashboard refresh error:', error);
+            }
+            hideLoading();
+        }
+
+        async function loadRealtimeStats() {
+            const stats = await getRealtimeStats();
+            if (stats) {
+                document.getElementById('stat-active').textContent = stats.activeDonations;
+                document.getElementById('stat-volunteers').textContent = stats.activeVolunteers;
+                document.getElementById('stat-pending').textContent = stats.pendingPickups;
+                document.getElementById('stat-meals').textContent = stats.mealsDistributed;
+            }
+        }
+
+        async function loadUrgentDonations() {
+            const donations = await getUrgentDonations();
+            const container = document.getElementById('urgent-donations');
+            
+            if (!donations || donations.length === 0) {
+                container.innerHTML = '<p class="text-muted">No urgent donations</p>';
+                return;
+            }
+
+            container.innerHTML = donations.slice(0, 5).map(d => `
+                <div class="donation-item urgency-${d.urgency}">
+                    <div class="donation-info">
+                        <h4>${d.foodType}</h4>
+                        <p>${d.quantity} ${d.unit} • ${d.pickupAddress}</p>
+                        <small>Predicted shelf life: ${Math.round(d.predictedShelfLife)}h</small>
+                    </div>
+                    <div class="prediction-bar">
+                        <div class="prediction-fill" style="width: ${d.shelfLifeScore}%; background: ${getUrgencyColor(d.urgency)}"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getUrgencyColor(urgency) {
+            const colors = { critical: '#dc2626', high: '#d97706', medium: '#2563eb', normal: '#059669' };
+            return colors[urgency] || colors.normal;
+        }
+
+        async function loadImpactAnalytics() {
+            const analytics = await getImpactAnalytics();
+            if (analytics) {
+                document.getElementById('impact-total').textContent = analytics.totalDonations;
+                document.getElementById('impact-meals').textContent = analytics.totalMeals;
+                document.getElementById('impact-volunteers').textContent = analytics.totalVolunteers;
+                document.getElementById('impact-efficiency').textContent = analytics.efficiency + '%';
+                document.getElementById('impact-co2').textContent = analytics.co2Saved + 'kg';
+            }
+        }
+
+        async function loadOrganizations() {
+            const orgs = await getOrganizations();
+            const container = document.getElementById('organizations-list');
+            
+            if (!orgs) {
+                container.innerHTML = '<p class="text-muted">Loading organizations...</p>';
+                return;
+            }
+
+            container.innerHTML = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Organization</th>
+                            <th>Type</th>
+                            <th>Current Stock</th>
+                            <th>Daily Need</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${orgs.map(org => `
+                            <tr>
+                                <td>${org.name}</td>
+                                <td>${org.type}</td>
+                                <td>${Math.round(org.currentStock)} ${org.currentStock > 0 ? 'kg' : ''}</td>
+                                <td>${org.dailyNeed} kg</td>
+                                <td>
+                                    <span class="badge ${org.currentStock < org.dailyNeed ? 'badge-danger' : 'badge-success'}">
+                                        ${org.currentStock < org.dailyNeed ? 'Needs Donation' : 'Adequate'}
+                                    </span>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        async function loadAIInsights() {
+            const analysis = await getRedistributionAnalysis();
+            const container = document.getElementById('ai-insights');
+            
+            if (!analysis || !analysis.aiRecommendations) {
+                container.innerHTML = '<p class="text-muted">Loading AI insights...</p>';
+                return;
+            }
+
+            container.innerHTML = analysis.aiRecommendations.map(rec => `
+                <div class="ai-insight">
+                    <strong><i class="fas fa-lightbulb"></i> ${rec.message}</strong>
+                    <p style="margin: 0.5rem 0 0; font-size: 0.9rem;">${rec.action}</p>
+                </div>
+            `).join('');
+        }
+
+        async function generateOptimizedRoute() {
+            const donations = await getUrgentDonations();
+            const user = getCurrentUser();
+            
+            // Default location (NYC)
+            const volunteerLocation = { lat: 40.7128, lng: -74.0060 };
+            
+            const route = await optimizeRoute(donations || [], volunteerLocation, 30);
+            
+            if (route && route.route) {
+                displayRoute(route);
+            }
+        }
+
+        function displayRoute(route) {
+            const mapContainer = document.getElementById('route-map');
+            const summaryContainer = document.getElementById('route-summary');
+            
+            // Display simplified route visualization
+            const stops = route.route.map((stop, i) => {
+                const x = 50 + (i * 40) % 200;
+                const y = 50 + Math.sin(i) * 80;
+                return `<div class="route-stop" style="left: ${x}px; top: ${y}px;">${i + 1}</div>`;
+            }).join('');
+            
+            mapContainer.innerHTML = stops;
+            
+            summaryContainer.innerHTML = `
+                <div class="route-summary">
+                    <div><strong>Total Stops:</strong> ${route.summary.totalStops}</div>
+                    <div><strong>Distance:</strong> ${route.summary.totalDistance} km</div>
+                    <div><strong>Est. Time:</strong> ${formatTime(route.summary.estimatedTime)}</div>
+                    <div><strong>CO₂ Saved:</strong> ${route.summary.co2Saved} kg</div>
+                    <div><strong>Efficiency:</strong> ${route.summary.efficiency}%</div>
+                </div>
+            `;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            refreshDashboard();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(refreshDashboard, 30000);
+        });
+
+        // Listen for real-time updates
+        if (typeof socket !== 'undefined') {
+            socket.on('donation:created', () => refreshDashboard());
+            socket.on('donation:status-updated', () => refreshDashboard());
+        }
+    </script>
+</body>
+</html>

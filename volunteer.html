@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoodShare AI - Volunteer Portal</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .volunteer-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+        
+        .availability-toggle {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: rgba(255,255,255,0.3);
+            border-radius: 30px;
+            transition: 0.3s;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        
+        .toggle-switch input:checked + .toggle-slider {
+            background: #10b981;
+        }
+        
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(30px);
+        }
+        
+        .pickup-card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--primary-color);
+            transition: transform 0.3s;
+        }
+        
+        .pickup-card:hover {
+            transform: translateX(5px);
+        }
+        
+        .pickup-card.urgent {
+            border-left-color: #dc2626;
+            background: #fef2f2;
+        }
+        
+        .pickup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        
+        .pickup-route {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            padding: 0.75rem;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+        
+        .route-point {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .route-point .icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+        
+        .route-line {
+            flex: 1;
+            height: 2px;
+            background: #e2e8f0;
+            margin: 0 0.5rem;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-box {
+            background: var(--white);
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+        
+        .stat-box .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .stat-box .label {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fas fa-utensils"></i>
+            <span>FoodShare <span class="ai-badge"><i class="fas fa-brain"></i> AI</span></span>
+        </div>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="donor.html">Donate</a>
+            <a href="#" class="active">Volunteer</a>
+            <button class="btn btn-outline" onclick="logout()">Logout</button>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <!-- Volunteer Status Header -->
+        <div class="volunteer-header">
+            <h1>🚚 Volunteer Dashboard</h1>
+            <p>AI-optimized pickup routes and real-time assignments</p>
+            <div class="availability-toggle">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="availabilityToggle" onchange="toggleAvailability()">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span id="availabilityStatus">You are currently offline</span>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="value" id="stat-total-pickups">0</div>
+                <div class="label">Total Pickups</div>
+            </div>
+            <div class="stat-box">
+                <div class="value" id="stat-distance">0km</div>
+                <div class="label">Total Distance</div>
+            </div>
+            <div class="stat-box">
+                <div class="value" id="stat-rating">5.0</div>
+                <div class="label">Rating</div>
+            </div>
+            <div class="stat-box">
+                <div class="value" id="stat-meals">0</div>
+                <div class="label">Meals Delivered</div>
+            </div>
+        </div>
+
+        <!-- AI Optimized Route -->
+        <div class="section">
+            <h2><i class="fas fa-route"></i> AI-Optimized Pickup Route</h2>
+            <div class="card">
+                <div class="card-body">
+                    <div id="optimized-route">
+                        <p class="text-muted">Enable availability to see optimized routes</p>
+                    </div>
+                    <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;" onclick="getOptimizedRoute()">
+                        <i class="fas fa-magic"></i> Get AI Route
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Available Pickups -->
+        <div class="section">
+            <h2><i class="fas fa-list"></i> Available Pickups</h2>
+            <div id="available-pickups">
+                <p class="text-muted">Loading available pickups...</p>
+            </div>
+        </div>
+
+        <!-- My Assignments -->
+        <div class="section">
+            <h2><i class="fas fa-tasks"></i> My Assignments</h2>
+            <div id="my-assignments">
+                <p class="text-muted">No current assignments</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="../js/app.js"></script>
+    <script>
+        let isAvailable = false;
+        let watchId = null;
+
+        // Toggle availability
+        async function toggleAvailability() {
+            isAvailable = !isAvailable;
+            const toggle = document.getElementById('availabilityToggle');
+            const status = document.getElementById('availabilityStatus');
+            
+            if (isAvailable) {
+                toggle.checked = true;
+                status.textContent = 'You are online - receiving AI-matched pickups';
+                
+                // Get location
+                if (navigator.geolocation) {
+                    watchId = navigator.geolocation.watchPosition(
+                        (position) => {
+                            updateLocation(position.coords.latitude, position.coords.longitude);
+                        },
+                        (error) => console.error('Location error:', error)
+                    );
+                }
+                
+                // Update server
+                await updateVolunteerAvailability(true, 40.7128, -74.0060, 5000);
+                
+                loadAvailablePickups();
+            } else {
+                toggle.checked = false;
+                status.textContent = 'You are offline';
+                
+                if (watchId) {
+                    navigator.geolocation.clearWatch(watchId);
+                }
+                
+                await updateVolunteerAvailability(false);
+            }
+        }
+
+        // Get optimized route from AI
+        async function getOptimizedRoute() {
+            const donations = await getUrgentDonations();
+            const user = getCurrentUser();
+            
+            // Get current location
+            let location = { lat: 40.7128, lng: -74.0060 };
+            
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((pos) => {
+                    location = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                });
+            }
+
+            showLoading();
+            const route = await optimizeRoute(donations || [], location, 30);
+            hideLoading();
+
+            if (route && route.route) {
+                displayOptimizedRoute(route);
+            }
+        }
+
+        // Display optimized route
+        function displayOptimizedRoute(route) {
+            const container = document.getElementById('optimized-route');
+            
+            container.innerHTML = `
+                <div style="margin-bottom: 1rem;">
+                    <h4>Route Summary</h4>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                        <div class="pickup-route">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>${route.summary.totalStops} Stops</span>
+                        </div>
+                        <div class="pickup-route">
+                            <i class="fas fa-road"></i>
+                            <span>${route.summary.totalDistance} km</span>
+                        </div>
+                        <div class="pickup-route">
+                            <i class="fas fa-clock"></i>
+                            <span>${formatTime(route.summary.estimatedTime)}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <h4>Stops</h4>
+                ${route.route.map((stop, i) => `
+                    <div class="pickup-card ${stop.urgency === 'critical' || stop.urgency === 'high' ? 'urgent' : ''}">
+                        <div class="pickup-header">
+                            <div>
+                                <h4>${i + 1}. ${stop.address || 'Pickup Point'}</h4>
+                                <p>${stop.id ? 'Food pickup' : 'Delivery'}</p>
+                            </div>
+                            <span class="urgency-indicator urgency-${stop.urgency}">${stop.urgency}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <small>Distance: ${formatDistance(stop.distanceFromPrevious)}</small>
+                            <small>Est. shelf life: ${Math.round(stop.predictedShelfLife)}h</small>
+                        </div>
+                    </div>
+                `).join('')}
+                
+                <div class="action-buttons">
+                    <button class="btn btn-primary" style="flex: 1;" onclick="acceptRoute()">
+                        <i class="fas fa-check"></i> Accept Route
+                    </button>
+                    <button class="btn btn-outline" style="flex: 1;" onclick="getOptimizedRoute()">
+                        <i class="fas fa-redo"></i> Refresh
+                    </button>
+                </div>
+            `;
+        }
+
+        // Load available pickups
+        async function loadAvailablePickups() {
+            const donations = await getDonations();
+            const container = document.getElementById('available-pickups');
+            
+            if (!donations || donations.length === 0) {
+                container.innerHTML = '<p class="text-muted">No pickups available</p>';
+                return;
+            }
+
+            const pending = donations.filter(d => d.status === 'pending');
+            
+            container.innerHTML = pending.slice(0, 10).map(d => `
+                <div class="pickup-card ${d.urgency === 'critical' || d.urgency === 'high' ? 'urgent' : ''}">
+                    <div class="pickup-header">
+                        <div>
+                            <h4>${d.foodType}</h4>
+                            <p>${d.quantity} ${d.unit} • ${d.pickupAddress}</p>
+                        </div>
+                        <span class="urgency-indicator urgency-${d.urgency}">${d.urgency}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <small><i class="fas fa-clock"></i> Shelf life: ${Math.round(d.predictedShelfLife)}h</small>
+                        <button class="btn btn-sm btn-primary" onclick="acceptPickup('${d.id}')">
+                            Accept
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Accept a pickup
+        async function acceptPickup(donationId) {
+            const user = getCurrentUser();
+            if (!user) return;
+
+            const result = await assignDonationsToVolunteer([donationId], user.id);
+            
+            if (result && result.success) {
+                showNotification('Pickup accepted!', 'success');
+                updateDonationStatus(donationId, 'assigned');
+                loadAvailablePickups();
+            }
+        }
+
+        // Accept entire route
+        async function acceptRoute() {
+            showNotification('Route accepted! Navigation starting...', 'success');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAvailablePickups();
+        });
+
+        // Listen for real-time assignments
+        if (typeof socket !== 'undefined') {
+            socket.on('pickup:assigned', (assignment) => {
+                showNotification('New pickup assigned!', 'warning');
+                loadAvailablePickups();
+            });
+        }
+    </script>
+</body>
+</html>

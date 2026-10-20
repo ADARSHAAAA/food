@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - FoodShare</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Login Container -->
+    <div class="login-container">
+        <div class="login-box fade-in">
+            <div class="logo" style="justify-content: center; margin-bottom: 1.5rem;">
+                <i class="fas fa-utensils"></i>
+                <span>FoodShare</span>
+            </div>
+            
+            <h2>Welcome Back</h2>
+            
+            <!-- Role Selection -->
+            <div class="role-selector" id="roleSelector">
+                <div class="role-option active" data-role="donor">
+                    <i class="fas fa-hand-holding-heart"></i>
+                    <span>Donor</span>
+                </div>
+                <div class="role-option" data-role="volunteer">
+                    <i class="fas fa-hands-helping"></i>
+                    <span>Volunteer</span>
+                </div>
+                <div class="role-option" data-role="admin">
+                    <i class="fas fa-user-shield"></i>
+                    <span>Admin</span>
+                </div>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                </div>
+                
+                <div class="form-group" style="display: flex; justify-content: space-between; align-items: center;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" name="remember"> Remember me
+                    </label>
+                    <a href="#" style="color: var(--primary-color); font-size: 0.9rem;">Forgot Password?</a>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+            </form>
+            
+            <p>Don't have an account? <a href="#" id="registerLink">Register here</a></p>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div class="modal" id="registerModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create Account</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="regName">Full Name</label>
+                    <input type="text" id="regName" name="name" placeholder="Enter your full name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="regEmail">Email Address</label>
+                    <input type="email" id="regEmail" name="email" placeholder="Enter your email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="regPhone">Phone Number</label>
+                    <input type="tel" id="regPhone" name="phone" placeholder="Enter your phone number" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="regPassword">Password</label>
+                    <input type="password" id="regPassword" name="password" placeholder="Create a password" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="regRole">Account Type</label>
+                    <select id="regRole" name="role" required>
+                        <option value="">Select account type</option>
+                        <option value="donor">Donor</option>
+                        <option value="volunteer">Volunteer</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <i class="fas fa-user-plus"></i> Register
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        // Role Selector Logic
+        document.querySelectorAll('.role-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.role-option').forEach(opt => opt.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // URL Parameter for Pre-selecting Role
+        const urlParams = new URLSearchParams(window.location.search);
+        const roleParam = urlParams.get('role');
+        if (roleParam) {
+            document.querySelectorAll('.role-option').forEach(opt => {
+                opt.classList.remove('active');
+                if (opt.dataset.role === roleParam) {
+                    opt.classList.add('active');
+                }
+            });
+        }
+
+        // Register Modal
+        document.getElementById('registerLink').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('registerModal').classList.add('active');
+        });
+
+        function closeModal() {
+            document.getElementById('registerModal').classList.remove('active');
+        }
+
+        // Close modal on outside click
+        document.getElementById('registerModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Login Form Submit
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const role = document.querySelector('.role-option.active').dataset.role;
+            const email = document.getElementById('email').value;
+            
+            // Demo login - redirect based on role
+            if (role === 'donor') {
+                window.location.href = 'donor.html';
+            } else if (role === 'volunteer') {
+                window.location.href = 'volunteer.html';
+            } else if (role === 'admin') {
+                window.location.href = 'dashboard.html';
+            }
+        });
+
+        // Register Form Submit
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Registration successful! Please login.');
+            closeModal();
+        });
+    </script>
+</body>
+</html>

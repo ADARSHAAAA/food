@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - FoodShare AI</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .register-container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+        
+        .register-tabs {
+            display: flex;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .register-tab {
+            flex: 1;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--gray);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .register-tab.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+        
+        .register-tab i {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .location-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .city-suggestions {
+            position: relative;
+        }
+        
+        .city-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 10;
+            display: none;
+        }
+        
+        .city-list.show {
+            display: block;
+        }
+        
+        .city-item {
+            padding: 0.75rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .city-item:hover {
+            background: #f8fafc;
+        }
+        
+        .success-message {
+            background: #d1fae5;
+            color: #059669;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        
+        .error-message {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fas fa-utensils"></i>
+            <span>FoodShare <span class="ai-badge"><i class="fas fa-brain"></i> AI</span></span>
+        </div>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="login.html">Login</a>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <div class="register-container">
+            <h2 style="text-align: center; margin-bottom: 1rem;">Join FoodShare</h2>
+            <p style="text-align: center; color: var(--gray); margin-bottom: 2rem;">
+                Register your Cafe/Restaurant or NGO to start connecting
+            </p>
+            
+            <div id="successMessage" class="success-message">
+                Registration successful! Redirecting to login...
+            </div>
+            
+            <div id="errorMessage" class="error-message"></div>
+            
+            <div class="register-tabs">
+                <div class="register-tab active" onclick="showForm('cafe')">
+                    <i class="fas fa-store"></i>
+                    Cafe/Restaurant
+                </div>
+                <div class="register-tab" onclick="showForm('ngo')">
+                    <i class="fas fa-building"></i>
+                    NGO/Organization
+                </div>
+            </div>
+            
+            <form id="registerForm" onsubmit="handleRegister(event)">
+                <input type="hidden" id="userType" value="cafe">
+                
+                <div class="form-group">
+                    <label>Name *</label>
+                    <input type="text" id="name" required placeholder="Cafe name or Organization name">
+                </div>
+                
+                <div class="form-group">
+                    <label>Email *</label>
+                    <input type="email" id="email" required placeholder="your@email.com">
+                </div>
+                
+                <div class="form-group">
+                    <label>Phone *</label>
+                    <input type="tel" id="phone" required placeholder="+91 9876543210">
+                </div>
+                
+                <div class="form-group">
+                    <label>Address *</label>
+                    <textarea id="address" required rows="2" placeholder="Full address"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>City *</label>
+                    <div class="city-suggestions">
+                        <input type="text" id="city" required placeholder="e.g., Auraiya, Mumbai, Delhi" autocomplete="off">
+                        <div id="cityList" class="city-list"></div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>State</label>
+                    <input type="text" id="state" placeholder="e.g., UP, MH, DL">
+                </div>
+                
+                <div class="location-inputs">
+                    <div class="form-group">
+                        <label>Latitude</label>
+                        <input type="number" step="0.0001" id="lat" placeholder="26.4700">
+                    </div>
+                    <div class="form-group">
+                        <label>Longitude</label>
+                        <input type="number" step="0.0001" id="lng" placeholder="79.5100">
+                    </div>
+                </div>
+                
+                <p style="font-size: 0.85rem; color: var(--gray); margin-bottom: 1rem;">
+                    <i class="fas fa-info-circle"></i> 
+                    Enter coordinates manually or leave blank. You can find lat/lng from Google Maps.
+                </p>
+                
+                <div id="ngoFields" style="display: none;">
+                    <div class="form-group">
+                        <label>Daily Food Need (kg)</label>
+                        <input type="number" id="dailyNeed" placeholder="100">
+                    </div>
+                    <div class="form-group">
+                        <label>Storage Capacity (kg)</label>
+                        <input type="number" id="capacity" placeholder="200">
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <i class="fas fa-user-plus"></i> Register
+                </button>
+            </form>
+            
+            <p style="text-align: center; margin-top: 1rem;">
+                Already registered? <a href="login.html">Login here</a>
+            </p>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="../js/app.js"></script>
+    <script>
+        // Common Indian cities
+        const indianCities = [
+            'Auraiya', 'Agra', 'Ahmedabad', 'Allahabad', 'Amritsar', 
+            'Aurangabad', 'Bangalore', 'Bhopal', 'Bhubaneswar', 'Chennai',
+            'Coimbatore', 'Delhi', 'Faridabad', 'Ghaziabad', 'Guindy',
+            'Hyderabad', 'Indore', 'Jaipur', 'Jammu', 'Jodhpur',
+            'Kanpur', 'Kolkata', 'Lucknow', 'Ludhiana', 'Madurai',
+            'Meerut', 'Mumbai', 'Nagpur', 'Nashik', 'Noida',
+            'Patna', 'Pune', 'Raipur', 'Rajkot', 'Ranchi',
+            'Shimla', 'Surat', 'Thiruvananthapuram', 'Tiruchirappalli', 'Vadodara',
+            'Varanasi', 'Vijayawada', 'Visakhapatnam', 'Warangal'
+        ];
+
+        function showForm(type) {
+            document.getElementById('userType').value = type;
+            document.getElementById('ngoFields').style.display = type === 'ngo' ? 'block' : 'none';
+            
+            document.querySelectorAll('.register-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.closest('.register-tab').classList.add('active');
+        }
+
+        // City suggestions
+        const cityInput = document.getElementById('city');
+        const cityList = document.getElementById('cityList');
+        
+        cityInput.addEventListener('input', function() {
+            const value = this.value.toLowerCase();
+            if (value.length < 1) {
+                cityList.classList.remove('show');
+                return;
+            }
+            
+            const matches = indianCities.filter(city => 
+                city.toLowerCase().startsWith(value)
+            );
+            
+            if (matches.length > 0) {
+                cityList.innerHTML = matches.map(city => 
+                    `<div class="city-item" onclick="selectCity('${city}')">${city}</div>`
+                ).join('');
+                cityList.classList.add('show');
+            } else {
+                cityList.classList.remove('show');
+            }
+        });
+
+        function selectCity(city) {
+            document.getElementById('city').value = city;
+            cityList.classList.remove('show');
+            
+            // Set default coordinates for known cities
+            const cityCoords = {
+                'Auraiya': { lat: 26.4700, lng: 79.5100 },
+                'Delhi': { lat: 28.7041, lng: 77.1025 },
+                'Mumbai': { lat: 19.0760, lng: 72.8777 },
+                'Bangalore': { lat: 12.9716, lng: 77.5946 },
+                'Lucknow': { lat: 26.8467, lng: 80.9462 },
+                'Kanpur': { lat: 26.4499, lng: 80.3319 },
+                'Agra': { lat: 27.1767, lng: 78.0081 },
+                'Jaipur': { lat: 26.9124, lng: 75.7873 }
+            };
+            
+            if (cityCoords[city]) {
+                document.getElementById('lat').value = cityCoords[city].lat;
+                document.getElementById('lng').value = cityCoords[city].lng;
+            }
+        }
+
+        // Close city list when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.city-suggestions')) {
+                cityList.classList.remove('show');
+            }
+        });
+
+        async function handleRegister(event) {
+            event.preventDefault();
+            
+            const userType = document.getElementById('userType').value;
+            const data = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                address: document.getElementById('address').value,
+                city: document.getElementById('city').value,
+                state: document.getElementById('state').value,
+                lat: document.getElementById('lat').value,
+                lng: document.getElementById('lng').value
+            };
+
+            if (userType === 'ngo') {
+                data.capacity = parseInt(document.getElementById('capacity').value) || 200;
+                data.dailyNeed = parseInt(document.getElementById('dailyNeed').value) || 100;
+            }
+
+            const endpoint = userType === 'cafe' ? '/api/cafes/register' : '/api/ngos/register';
+            
+            try {
+                const response = await fetch(`http://localhost:3000${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('successMessage').style.display = 'block';
+                    document.getElementById('errorMessage').style.display = 'none';
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 2000);
+                } else {
+                    document.getElementById('errorMessage').textContent = result.message;
+                    document.getElementById('errorMessage').style.display = 'block';
+                }
+            } catch (error) {
+                document.getElementById('errorMessage').textContent = 'Error registering. Please try again.';
+                document.getElementById('errorMessage').style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

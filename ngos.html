@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find NGOs - FoodShare AI</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .ngo-card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s;
+        }
+        
+        .ngo-card:hover {
+            transform: translateY(-3px);
+        }
+        
+        .ngo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        
+        .ngo-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--dark);
+        }
+        
+        .ngo-type {
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .ngo-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .ngo-detail {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+        
+        .stock-indicator {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .stock-bar {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+        
+        .stock-fill {
+            height: 100%;
+            background: #22c55e;
+            border-radius: 4px;
+            transition: width 0.5s;
+        }
+        
+        .stock-fill.low { background: #ef4444; }
+        .stock-fill.medium { background: #f59e0b; }
+        
+        .city-filter {
+            background: var(--white);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+        }
+        
+        .city-suggestions {
+            position: relative;
+        }
+        
+        .city-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 10;
+            display: none;
+        }
+        
+        .city-list.show { display: block; }
+        
+        .city-item {
+            padding: 0.75rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .city-item:hover { background: #f8fafc; }
+        
+        .verified-badge {
+            background: #d1fae5;
+            color: #059669;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fas fa-utensils"></i>
+            <span>FoodShare <span class="ai-badge"><i class="fas fa-brain"></i> AI</span></span>
+        </div>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="donor.html">Donate</a>
+            <a href="#" class="active">Find NGOs</a>
+            <a href="register.html" class="btn btn-primary">Register NGO</a>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <div class="page-header">
+            <div>
+                <h1>🏢 Partner NGOs</h1>
+                <p>Connect with verified NGOs in your city</p>
+            </div>
+        </div>
+
+        <!-- City Filter -->
+        <div class="city-filter">
+            <h3><i class="fas fa-search-location"></i> Filter by City</h3>
+            <div class="city-suggestions" style="max-width: 400px;">
+                <input type="text" id="cityFilter" placeholder="Type your city name..." autocomplete="off">
+                <div id="cityList" class="city-list"></div>
+            </div>
+            <div id="selectedCity" style="margin-top: 1rem;">
+                <span class="badge badge-info">Showing all cities</span>
+            </div>
+        </div>
+
+        <!-- NGOs List -->
+        <div id="ngosList">
+            <p class="text-muted">Loading NGOs...</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="../js/app.js"></script>
+    <script>
+        const indianCities = [
+            'Auraiya', 'Agra', 'Ahmedabad', 'Allahabad', 'Amritsar', 
+            'Bangalore', 'Bhopal', 'Chennai', 'Delhi', 'Guindy',
+            'Hyderabad', 'Indore', 'Jaipur', 'Kanpur', 'Kolkata', 
+            'Lucknow', 'Ludhiana', 'Madurai', 'Meerut', 'Mumbai', 
+            'Nagpur', 'Nashik', 'Noida', 'Patna', 'Pune', 
+            'Raipur', 'Rajkot', 'Ranchi', 'Surat', 'Vadodara',
+            'Varanasi', 'Visakhapatnam'
+        ];
+
+        let currentCity = null;
+
+        // City filter
+        const cityInput = document.getElementById('cityFilter');
+        const cityList = document.getElementById('cityList');
+        
+        cityInput.addEventListener('input', function() {
+            const value = this.value.toLowerCase();
+            if (value.length < 1) {
+                cityList.classList.remove('show');
+                return;
+            }
+            
+            const matches = indianCities.filter(city => 
+                city.toLowerCase().startsWith(value)
+            );
+            
+            if (matches.length > 0) {
+                cityList.innerHTML = matches.map(city => 
+                    `<div class="city-item" onclick="filterByCity('${city}')">${city}</div>`
+                ).join('');
+                cityList.classList.add('show');
+            } else {
+                cityList.classList.remove('show');
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.city-suggestions')) {
+                cityList.classList.remove('show');
+            }
+        });
+
+        function filterByCity(city) {
+            currentCity = city;
+            cityInput.value = city;
+            cityList.classList.remove('show');
+            document.getElementById('selectedCity').innerHTML = 
+                `<span class="badge badge-info">Showing: ${city}</span> 
+                 <button class="btn btn-sm btn-outline" onclick="clearFilter()">Clear</button>`;
+            loadNGOs(city);
+        }
+
+        function clearFilter() {
+            currentCity = null;
+            cityInput.value = '';
+            document.getElementById('selectedCity').innerHTML = 
+                '<span class="badge badge-info">Showing all cities</span>';
+            loadNGOs(null);
+        }
+
+        // Load NGOs
+        async function loadNGOs(city = null) {
+            const url = city 
+                ? `http://localhost:3000/api/ngos?city=${encodeURIComponent(city)}`
+                : 'http://localhost:3000/api/ngos';
+            
+            const response = await fetch(url);
+            const ngos = await response.json();
+            
+            const container = document.getElementById('ngosList');
+            
+            if (!ngos || ngos.length === 0) {
+                container.innerHTML = '<p class="text-muted">No NGOs found in this city.</p>';
+                return;
+            }
+
+            container.innerHTML = ngos.map(ngo => {
+                const stockPercent = ngo.dailyNeed ? Math.round((ngo.currentStock / ngo.dailyNeed) * 100) : 0;
+                const stockClass = stockPercent < 30 ? 'low' : stockPercent < 70 ? 'medium' : '';
+                
+                return `
+                <div class="ngo-card">
+                    <div class="ngo-header">
+                        <div>
+                            <span class="ngo-name">${ngo.name}</span>
+                            ${ngo.verified ? '<span class="verified-badge">✓ Verified</span>' : ''}
+                        </div>
+                        <span class="ngo-type">${ngo.type || 'NGO'}</span>
+                    </div>
+                    
+                    <div class="ngo-details">
+                        <div class="ngo-detail">
+                            <i class="fas fa-map-marker-alt"></i>
+                            ${ngo.city}, ${ngo.state || ''}
+                        </div>
+                        <div class="ngo-detail">
+                            <i class="fas fa-phone"></i>
+                            ${ngo.phone || 'N/A'}
+                        </div>
+                        <div class="ngo-detail">
+                            <i class="fas fa-ruler-horizontal"></i>
+                            ${ngo.address || 'Address not specified'}
+                        </div>
+                        <div class="ngo-detail">
+                            <i class="fas fa-utensils"></i>
+                            Need: ${ngo.dailyNeed || 100} kg/day
+                        </div>
+                    </div>
+                    
+                    <div class="stock-indicator">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Current Stock</span>
+                            <span>${Math.round(ngo.currentStock || 0)} / ${ngo.dailyNeed || 100} kg</span>
+                        </div>
+                        <div class="stock-bar">
+                            <div class="stock-fill ${stockClass}" style="width: ${Math.min(100, stockPercent)}%"></div>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary" style="width: 100%;" onclick="requestFood('${ngo.id}', '${ngo.name}')">
+                        <i class="fas fa-hand-holding-heart"></i> Connect with this NGO
+                    </button>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function requestFood(ngoId, ngoName) {
+            alert(`Request sent to ${ngoName}! They will contact you shortly.`);
+        }
+
+        // Load all NGOs on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadNGOs();
+        });
+    </script>
+</body>
+</html>
